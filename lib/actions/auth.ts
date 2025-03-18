@@ -84,7 +84,7 @@ export const singUpAction = async (
     })
 
     await workflowClient.trigger({
-      url: `${config.env.prodApiEndPoint}/api/workflow/onboarding`,
+      url: `${config.env.prodApiEndPoint}/api/workflows/onboarding`,
       body: {
         email,
         fullName,
