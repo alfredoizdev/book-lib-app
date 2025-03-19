@@ -16,95 +16,65 @@ const THREE_DAYS_IN_MS = 3 * ONE_DAY_IN_MS
 const THIRTY_DAYS_IN_MS = 30 * ONE_DAY_IN_MS
 
 const getUserState = async (email: string): Promise<UserState> => {
-  try {
-    const user = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, email))
-      .limit(1)
+  const user = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1)
 
-    if (user.length === 0) return 'non-active'
+  if (user.length === 0) return 'non-active'
 
-    const lastActivityDate = new Date(user[0].lastActivityDate!)
-    const now = new Date()
-    const timeDifference = now.getTime() - lastActivityDate.getTime()
+  const lastActivityDate = new Date(user[0].lastActivityDate!)
+  const now = new Date()
+  const timeDifference = now.getTime() - lastActivityDate.getTime()
 
-    if (
-      timeDifference > THREE_DAYS_IN_MS &&
-      timeDifference <= THIRTY_DAYS_IN_MS
-    ) {
-      return 'non-active'
-    }
-
-    return 'active'
-  } catch (error) {
-    console.error('Error fetching user state:', error)
-    throw new Error('Failed to fetch user state')
+  if (
+    timeDifference > THREE_DAYS_IN_MS &&
+    timeDifference <= THIRTY_DAYS_IN_MS
+  ) {
+    return 'non-active'
   }
+
+  return 'active'
 }
 
 export const { POST } = serve<InitialData>(async (context) => {
   const { email, fullName } = context.requestPayload
 
-  try {
-    // Welcome Email
-    await context.run('new-signup', async () => {
-      try {
-        await sendEmail({
-          email,
-          subject: 'Welcome to the platform',
-          message: `Welcome ${fullName}!`,
-        })
-      } catch (error) {
-        console.error('Error sending welcome email:', error)
-        throw new Error('Failed to send welcome email')
-      }
+  // Welcome Email
+  await context.run('new-signup', async () => {
+    await sendEmail({
+      email,
+      subject: 'Welcome to the platform',
+      message: `Welcome ${fullName}!`,
+    })
+  })
+
+  await context.sleep('wait-for-3-days', 60 * 60 * 24 * 3)
+
+  while (true) {
+    const state = await context.run('check-user-state', async () => {
+      return await getUserState(email)
     })
 
-    await context.sleep('wait-for-3-days', 60 * 60 * 24 * 3)
-
-    while (true) {
-      try {
-        const state = await context.run('check-user-state', async () => {
-          return await getUserState(email)
+    if (state === 'non-active') {
+      await context.run('send-email-non-active', async () => {
+        await sendEmail({
+          email,
+          subject: 'Are you still there?',
+          message: `Hey ${fullName}, we miss you!`,
         })
-
-        if (state === 'non-active') {
-          await context.run('send-email-non-active', async () => {
-            try {
-              await sendEmail({
-                email,
-                subject: 'Are you still there?',
-                message: `Hey ${fullName}, we miss you!`,
-              })
-            } catch (error) {
-              console.error('Error sending non-active email:', error)
-              throw new Error('Failed to send non-active email')
-            }
-          })
-        } else if (state === 'active') {
-          await context.run('send-email-active', async () => {
-            try {
-              await sendEmail({
-                email,
-                subject: 'Welcome back!',
-                message: `Welcome back ${fullName}!`,
-              })
-            } catch (error) {
-              console.error('Error sending active email:', error)
-              throw new Error('Failed to send active email')
-            }
-          })
-        }
-
-        await context.sleep('wait-for-1-month', 60 * 60 * 24 * 30)
-      } catch (error) {
-        console.error('Error in user state workflow:', error)
-        throw new Error('Failed in user state workflow')
-      }
+      })
+    } else if (state === 'active') {
+      await context.run('send-email-active', async () => {
+        await sendEmail({
+          email,
+          subject: 'Welcome back!',
+          message: `Welcome back ${fullName}!`,
+        })
+      })
     }
-  } catch (error) {
-    console.error('Error in onboarding workflow:', error)
-    throw new Error('Failed in onboarding workflow')
+
+    await context.sleep('wait-for-1-month', 60 * 60 * 24 * 30)
   }
 })
