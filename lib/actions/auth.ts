@@ -9,8 +9,8 @@ import { eq } from 'drizzle-orm'
 import { headers } from 'next/headers'
 import ratelimit from '../ratelimit'
 import { redirect } from 'next/navigation'
-import { workflowClient } from '../workflow'
-import config from '../config'
+// import { workflowClient } from '../workflow'
+// import config from '../config'
 
 export const signInWithCredentialsAction = async (
   params: Pick<IAuthCredentials, 'email' | 'password'>
@@ -83,15 +83,15 @@ export const singUpAction = async (
       universityCard,
     })
 
-    await workflowClient.trigger({
-      url: `${config.env.prodApiEndPoint}/api/workflows/onboarding`,
-      body: {
-        email,
-        fullName,
-      },
-    })
+    // await workflowClient.trigger({
+    //   url: `${config.env.prodApiEndPoint}/api/workflows/onboarding`,
+    //   body: {
+    //     email,
+    //     fullName,
+    //   },
+    // })
 
-    // await signInWithCredentialsAction({ email, password })
+    await signInWithCredentialsAction({ email, password })
 
     return {
       success: true,
