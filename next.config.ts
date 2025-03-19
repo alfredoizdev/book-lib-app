@@ -23,6 +23,8 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  serverExternalPackages: ['@upstash/qstash', '@upstash/workflow'],
+  serverInternalPackages: ['@/lib/config', '@/lib/workflow'],
 }
 
 export default nextConfig
