@@ -91,7 +91,7 @@ export const singUpAction = async (
       },
     })
 
-    await signInWithCredentialsAction({ email, password })
+    // await signInWithCredentialsAction({ email, password })
 
     return {
       success: true,
